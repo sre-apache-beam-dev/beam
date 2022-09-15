@@ -77,3 +77,4 @@ jobs:
           env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           working-directory: scripts/ci/release
+
