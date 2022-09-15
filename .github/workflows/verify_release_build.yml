@@ -5,65 +5,75 @@ on:
       RELEASE_VER:
         description: Beam version of current release
         required: true
+        default: vtest # remove default before merging
+      COMMENT_TRIGGER_PHRASES:
+        description: Flag to comment the Jenkins Trigger Phrases in the new PR
+        required: true
+        default: false
 env:
-  WORKING_BRANCH: postcommit_validation_pr # Is it always the same branch name? or should we need to add it as input?
+  #WORKING_BRANCH: postcommit_validation_pr # Is it always the same branch name? or should we need to add it as input?
+  WORKING_BRANCH: 'verify-release-pr-test'
 jobs:
   check_environment:
     runs-on: ubuntu-latest
     steps:
       - name: Check environment
-        id: check_env_vars
-        env:
-          RELEASE_BRANCH: ${{ release-$RELEASE_VER }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Verify release build against branch: $RELEASE_BRANCH."
           echo "Verify hub installation."
-          hub version
           git version
-  create_release_pr:
+          hub version
+  # Run Gradle release build and all PostCommit Tests against Release Branch on Jenkins.
+  # This create_release_pr task will create a PR against apache/beam.
+  update_create_release_pr:
     needs: check_environment
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    env:
+      RELEASE_VER: ${{ github.event.inputs.RELEASE_VER }}
     steps:
-      - run: |
-          echo "[Current Task] Run Gradle release build and all PostCommit Tests against Release Branch on Jenkins."
-          echo "This task will create a PR against apache/beam."
+      - name: Set RELEASE_BRANCH env variable
+        run: |
+          RELEASE_BRANCH=release-${{env.RELEASE_VER}}
+          echo "RELEASE_BRANCH=${RELEASE_BRANCH}" >> $GITHUB_ENV
       - name: Check out code
         uses: actions/checkout@v3
         with:
-          ref: ${{ $RELEASE_BRANCH }}
-      - name: Set Dataflow Python Batch Tests Release Version
-        # Commenting for the moment: sh ./set_version.sh $RELEASE_VER --git-add instead of echo "This is a test." >> TEST_FILE.md
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Set git config
         run: |
-          git checkout -b $WORKING_BRANCH --quiet
-          echo "This is a test." >> TEST_FILE.md
-          git add TEST_FILE.md
+          git config user.name $GITHUB_ACTOR
+      - name: Set Dataflow Python Batch Tests Release Version
+        run: |
+          git checkout -b ${{env.WORKING_BRANCH}} --quiet
+          /bin/bash release/src/main/scripts/set_version.sh "$RELEASE_VER" --git-add
           # In case the version string was not changed, append a newline to CHANGES.md
           echo "" >> CHANGES.md
           git add CHANGES.md
           git commit -m "Changed version.py and gradle.properties to python dev version to create a test PR" --quiet
           git push origin $WORKING_BRANCH --quiet
-          hub pull-request -F- <<<"[DO NOT MERGE] Run all PostCommit and PreCommit Tests against Release Branch
-          You can run many tests automatically using release/src/main/scripts/mass_comment.py."
-          echo "[NOTE]: Please make sure all test targets have been invoked."
-          echo "Please check the test results. If there is any failure, follow the policy in release guide."
-        working-directory: "release/src/main/scripts"
-#  trigger_phrases:
-#    needs: create_testing_pr
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Trigger beam_Release_Gradle_Build and PostCommit jobs # Pending to include tests migrated to GH Actions (by Wizeline team)
-#        run: |
-#         sh ./mass_comment.py
-#        working-directory: 'release/src/main/scripts'
-
-# Commenting this clean-up step 'cause I think this step is not needed, as the final self-hosted implementation has ephemeral runners.
-#  clean-up:
-#    if: always()
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Clean Temporal Directory
-#        run: |
-#          echo "==================== Final Cleanup ===================="
-#          rm -rf $LOCAL_BEAM_DIR
-#          echo "* Deleted workspace ${LOCAL_BEAM_DIR}"
+      - name: Create new Release PR
+        id: create_pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          GITHUB_PR_URL=$(hub pull-request -b $GITHUB_ACTOR:${{env.RELEASE_BRANCH}} -h $GITHUB_ACTOR:${{env.WORKING_BRANCH}} -l ${{env.RELEASE_BRANCH}}  -F - <<<"[DO NOT MERGE] Run all PostCommit and PreCommit Tests against Release Branch.
+          You can run many tests automatically using release/src/main/scripts/mass_comment.py.")
+          echo "::set-output name=git_pr::${GITHUB_PR_URL}"
+    outputs:
+      git_pr: ${{ steps.create_pr.outputs.git_pr }}
+  comment_trigger_phrases:
+      if: ${{ github.event.inputs.COMMENT_TRIGGER_PHRASES }}
+      needs: update_create_release_pr
+      runs-on: ubuntu-latest
+      permissions:
+        pull-requests: write
+      steps:
+        - name: Create PR Comment
+          run: |
+            GITHUB_PR=${{ needs.update_create_release_pr.outputs.git_pr }}
+            sh ./comment_pr_trigger_phrases.sh $GITHUB_PR
+          env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          working-directory: scripts/ci/release
