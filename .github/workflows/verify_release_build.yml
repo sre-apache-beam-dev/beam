@@ -22,9 +22,9 @@ jobs:
   # This create_release_pr task will create a PR against apache/beam.
   update_create_release_pr:
     runs-on: [self-hosted, ubuntu-20.04]
-    permissions:
-      pull-requests: write
-      contents: write
+    # permissions:
+    #   pull-requests: write
+    #   contents: write
     env:
       RELEASE_VER: ${{ github.event.inputs.RELEASE_VER }}
     steps:
