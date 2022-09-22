@@ -21,7 +21,7 @@ jobs:
   # Run Gradle release build and all Tests against Release Branch on Jenkins.
   # This create_release_pr task will create a PR against apache/beam.
   update_create_release_pr:
-    runs-on: [self-hosted, ubuntu-20.04]
+    runs-on: ubuntu-latest
     # permissions:
     #   pull-requests: write
     #   contents: write
@@ -43,7 +43,7 @@ jobs:
       - name: Set git config
         run: |
           git config user.name $GITHUB_ACTOR
-          git config user.email actions@"$RUNNER_NAME".local
+#git config user.email actions@"$RUNNER_NAME".local
       - name: Set Release Version
         run: |
           git checkout -b ${{env.WORKING_BRANCH}} --quiet
