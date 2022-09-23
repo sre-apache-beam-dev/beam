@@ -59,7 +59,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ORG: ${{ github.event.inputs.ORG }}
         run: |
-          GITHUB_PR_URL=$(gh pr create -B ${{env.RELEASE_BRANCH}} -H $GITHUB_ACTOR:${{env.WORKING_BRANCH}} -t "[DO NOT MERGE] Run all PostCommit and PreCommit Tests against Release Branch" -b You can run many tests automatically using release/src/main/scripts/mass_comment.py.")
+          GITHUB_PR_URL=$(gh pr create -B ${{env.RELEASE_BRANCH}} -H $GITHUB_ACTOR:${{env.WORKING_BRANCH}} -t "[DO NOT MERGE] Run all PostCommit and PreCommit Tests against Release Branch" -b "You can run many tests automatically using release/src/main/scripts/mass_comment.py.")
       - name: Comment Jenkins Trigger Phrases in PR
         if: ${{ github.event.inputs.COMMENT_TRIGGER_PHRASES == 'true' }}
         run: |
