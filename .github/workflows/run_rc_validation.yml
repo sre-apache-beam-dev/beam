@@ -5,7 +5,7 @@ on:
       RELEASE_VER:
         description: Beam version of current release
         required: true
-        default: "04" # remove default before merging
+        default: "05" # remove default before merging
 #      USER_GCS_BUCKET:
 #        description: Bucket to upload results
 #        required: false
@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ env.RC_TAG }}
-          #token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup Common
         uses: ./.github/actions/common-rc-validation
       - name: Set git config
@@ -44,9 +44,9 @@ jobs:
       - name: Create Pull Request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-         # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git checkout -b ${{env.WORKING_BRANCH}} ${{env.RC_TAG}} --quiet
+          git checkout -b ${{env.WORKING_BRANCH}} --quiet
           touch empty_file.txt
           git add empty_file.txt
           git commit -m "Add empty file in order to create PR" --quiet
