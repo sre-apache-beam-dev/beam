@@ -6,30 +6,33 @@ on:
         description: Beam version of current release
         required: true
         default: 2.42.0 # remove default before merging
-      USER_GCS_BUCKET:
-        description: Bucket to upload results
-        required: false
-        default: gs://rc-validation-migration-tests
+#      USER_GCS_BUCKET:
+#        description: Bucket to upload results
+#        required: false
+#        default: gs://rc-validation-migration-tests
       RC_NUM:
         description: RC number
         required: true
         default: "1"
-env: # This should be a set of github secrets    
-  USER_GCP_PROJECT: apache-beam-testing
-  USER_GCP_REGION: us-central1
-  USER_GCP_ZONE: us-central1-a
-  REPO_URL: https://repository.apache.org/content/repositories/orgapachebeam-1284
+#env: # This should be a set of github secrets
+#  USER_GCP_PROJECT: apache-beam-testing
+#  USER_GCP_REGION: us-central1
+#  USER_GCP_ZONE: us-central1-a
+#  REPO_URL: https://repository.apache.org/content/repositories/orgapachebeam-1284
 jobs:
   python_release_candidate:
     #runs-on: [self-hosted, ubuntu-20.04]
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Common
-        uses: ./.github/actions/common-rc-validation
+      - name: Set RC_TAG branch
+        run: |
+          echo "RC_TAG=v${{github.event.inputs.RELEASE_VER}}-RC${{github.event.inputs.RC_NUM}}" >>  $GITHUB_ENV
       - name: Check out code
         uses: actions/checkout@v3
         with:
           ref: ${{ env.RC_TAG }}
+      - name: Setup Common
+        uses: ./.github/actions/common-rc-validation
       - name: Set git config
         run: |
           git config user.name $GITHUB_ACTOR
