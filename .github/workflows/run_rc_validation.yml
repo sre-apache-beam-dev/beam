@@ -5,7 +5,7 @@ on:
       RELEASE_VER:
         description: Beam version of current release
         required: true
-        default: 2.42.0 # remove default before merging
+        default: 01 # remove default before merging
 #      USER_GCS_BUCKET:
 #        description: Bucket to upload results
 #        required: false
@@ -26,6 +26,8 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Set RC_TAG branch
         run: |
@@ -48,8 +50,7 @@ jobs:
           git commit -m "Add empty line in order to create PR" --quiet
           git push origin ${{env.WORKING_BRANCH}} --quiet
           GITHUB_PR_URL=$(gh pr create -B ${{env.RELEASE_BRANCH}} -H ${{env.WORKING_BRANCH}} -t"[DO NOT MERGE] Run Python RC Validation Tests")
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 #GITHUB_PR_URL=$(gh pr create -B ${RELEASE_BRANCH} -H ${RC_TAG} -t"[DO NOT MERGE] Run Python RC Validation Tests"
       - name: Comment on PR to Trigger Python ReleaseCandidate Test
         run: |
