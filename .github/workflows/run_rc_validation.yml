@@ -23,6 +23,9 @@ jobs:
   python_release_candidate:
     #runs-on: [self-hosted, ubuntu-20.04]
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
     steps:
       - name: Set RC_TAG branch
         run: |
