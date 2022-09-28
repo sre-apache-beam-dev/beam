@@ -5,7 +5,7 @@ on:
       RELEASE_VER:
         description: Beam version of current release
         required: true
-        default: "01" # remove default before merging
+        default: "02" # remove default before merging
 #      USER_GCS_BUCKET:
 #        description: Bucket to upload results
 #        required: false
