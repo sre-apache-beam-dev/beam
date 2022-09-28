@@ -48,6 +48,8 @@ jobs:
           git commit -m "Add empty file in order to create PR" --quiet
           git push origin ${{env.WORKING_BRANCH}} --quiet
           GITHUB_PR_URL=$(gh pr create -B ${{env.RELEASE_BRANCH}} -H ${{env.WORKING_BRANCH}} -t"[DO NOT MERGE] Run Python RC Validation Tests")
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #GITHUB_PR_URL=$(gh pr create -B ${RELEASE_BRANCH} -H ${RC_TAG} -t"[DO NOT MERGE] Run Python RC Validation Tests"
       - name: Comment on PR to Trigger Python ReleaseCandidate Test
         run: |
