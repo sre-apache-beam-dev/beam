@@ -1,3 +1,22 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# To learn more about GitHub Actions in Apache Beam check the CI.md
+
 name: Verify Release Build
 on:
   workflow_dispatch:
@@ -5,22 +24,13 @@ on:
       RELEASE_VER:
         description: Beam version of current release
         required: true
-        default: vtest # remove default before merging
       COMMENT_TRIGGER_PHRASES:
         description: Flag to comment the Jenkins Trigger Phrases in the new PR
         required: true
-        default: 'true'
-      ORG:
-        description: Org name
-        required: true
-
 env:
-  #WORKING_BRANCH: postcommit_validation_pr # Is it always the same branch name? or should we need to add it as input?
-  WORKING_BRANCH: 'verify-release-pr-test'
+  WORKING_BRANCH: postcommit_validation_pr # Is it always the same branch name? or should we need to add it as input?
 jobs:
-  # Run Gradle release build and all Tests against Release Branch on Jenkins.
-  # This create_release_pr task will create a PR against apache/beam.
-  update_create_release_pr:
+  verify_release:
     runs-on: [self-hosted, ubuntu-20.04]
     permissions:
       pull-requests: write
@@ -41,45 +51,29 @@ jobs:
       - name: Set git config
         run: |
           git config user.name $GITHUB_ACTOR
-      #git config user.email actions@"$RUNNER_NAME".local
-    #   - name: Set Release Version
-    #     run: |
-    #       git checkout -b ${{env.WORKING_BRANCH}} --quiet
-    #       /bin/bash release/src/main/scripts/set_version.sh "$RELEASE_VER" --git-add
-    #       # In case the version string was not changed, append a newline to CHANGES.md
-    #       echo "" >> CHANGES.md
-    #   - name: Push Changes in ${{ env.WORKING_BRANCH }} Branch
-    #     run: |
-    #       git add CHANGES.md
-    #       git commit -m "Changed version.py and gradle.properties to python dev version to create a test PR" --quiet
-    #       git push origin $WORKING_BRANCH --quiet
-    #   - name: Create new Release PR
-    #     id: create_pr
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #       ORG: ${{ github.event.inputs.ORG }}
-    #     run: |
-    #       BASE_BRANCH=$ORG:${{env.RELEASE_BRANCH}}
-    #       echo $BASE_BRANCH
-    #       GITHUB_PR_URL=$(gh pr create -B ${{env.RELEASE_BRANCH}} -H $GITHUB_ACTOR:${{env.WORKING_BRANCH}} -t "[DO NOT MERGE] Run all PostCommit and PreCommit Tests against Release Branch" -b You can run many tests automatically using release/src/main/scripts/mass_comment.py.")
-    #       echo "::set-output name=git_pr::${GITHUB_PR_URL}"
-    # outputs:
-    #   git_pr: ${{ steps.create_pr.outputs.git_pr }}
-#  comment_trigger_phrases:
-#    if: ${{ github.event.inputs.COMMENT_TRIGGER_PHRASES == 'true' }}
-#    needs: update_create_release_pr
-#    runs-on: ubuntu-latest
-#    permissions:
-#      pull-requests: write
-#    steps:
-#      - name: Check out code
-#        uses: actions/checkout@v3
-#        with:
-#          ref: ${{ env.RELEASE_BRANCH }}
-#      - name: Comment Trigger Phrases in PR
-#        run: |
-#          GITHUB_PR=${{ needs.update_create_release_pr.outputs.git_pr }}
-#          sh ./comment_pr_trigger_phrases.sh $GITHUB_PR
-#        env:
-#          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        working-directory: 'scripts/ci/release'
+          git config user.email actions@"$RUNNER_NAME".local
+      - name: Set Release Version
+        run: |
+          git checkout -b ${{env.WORKING_BRANCH}} --quiet
+          /bin/bash release/src/main/scripts/set_version.sh "$RELEASE_VER" --git-add
+          # In case the version string was not changed, append a newline to CHANGES.md
+          echo "" >> CHANGES.md
+      - name: Push Changes in ${{ env.WORKING_BRANCH }} Branch
+        run: |
+          git add CHANGES.md
+          git commit -m "Changed version.py and gradle.properties to python dev version to create a test PR" --quiet
+          git push origin $WORKING_BRANCH --quiet
+      - name: Create new Release PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          GITHUB_PR_URL=$(gh pr create -B ${{env.RELEASE_BRANCH}} -H ${{env.WORKING_BRANCH}} -t "[DO NOT MERGE] Run all PostCommit and PreCommit Tests against Release Branch" -b "Run Gradle Release Build and Jenkins PreCommit and PostCommits tests automatically in this PR (refer to scripts/ci/release/mass_comment.txt). Please run the missing tests manually.")
+      # Run Gradle Release Build and PostCommit/PreCommit Tests against Release Branch on Jenkins.
+      - name: Comment Jenkins Trigger Phrases in PR
+        if: ${{ github.event.inputs.COMMENT_TRIGGER_PHRASES == 'true' }}
+        run: |
+          sh ./comment_pr_trigger_phrases.sh $GITHUB_PR_URL
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: 'scripts/ci/release'
+        
