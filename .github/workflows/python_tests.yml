@@ -24,6 +24,8 @@ on:
         description: 'Type "true" if you want to run Dataflow tests (GCP variables must be configured, check CI.md)'
         default: 'false'
         required: false
+  pull_request:
+    branches: [ master ]
 
 permissions: {}
 # This allows a subsequently queued workflow run to interrupt previous runs
