@@ -40,6 +40,8 @@ jobs:
     outputs:
       gcp-variables-set: ${{ steps.check_gcp_variables.outputs.gcp-variables-set }}
     steps:
+      - name: Modified workflow
+        run: echo "Fork!"
       - name: Check out code
         uses: actions/checkout@v3
         with:
