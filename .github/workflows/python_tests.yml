@@ -25,7 +25,11 @@ on:
         default: 'false'
         required: false
   pull_request:
-    branches: [ master ]
+    branches:
+      - "master"
+  push: 
+    branches:
+      - "master"
 
 permissions: {}
 # This allows a subsequently queued workflow run to interrupt previous runs
