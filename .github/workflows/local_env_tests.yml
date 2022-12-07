@@ -22,34 +22,43 @@ name: Local environment tests
 on:
   push:
     branches: ['master', 'release-*']
-    tags: 'v*'
+    tags: ['v*']
   pull_request:
     branches: ['master', 'release-*']
-    tags: 'v*'
-    paths: ['dev-support/**', 'buildSrc/**', '**/build.gradle', 'sdks/python/setup.py', 'sdks/python/tox.ini', 'local-env-setup.sh']
-  workflow_dispatch:
+    tags: ['v*']
+    paths: ['dev-support/**', 'buildSrc/**', '**/build.gradle', 'sdks/python/setup.py', 'sdks/python/tox.ini']
 
 # This allows a subsequently queued workflow run to interrupt previous runs
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
   cancel-in-progress: true
-
 jobs:
   run_local_env_install_ubuntu:
     timeout-minutes: 25
-    name: "Ubuntu run local environment shell script"
-    runs-on: ubuntu-latest
+    name: "Self-hosted (Ubuntu-20.04) run local environment shell script"
+    runs-on: [self-hosted, ubuntu-20.04]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Install go
+        uses: actions/setup-go@v3
         with:
-          go-version: '1.19'
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
+          go-version: '1.18'
       - name: "Installing local env dependencies"
         run: "sudo ./local-env-setup.sh"
         id: local_env_install_ubuntu
+      - name: Install Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+      - name: Install python3 venv
+        run: sudo apt install python3.8-venv -y
+      - name: Remove default GitHub maven configuration
+        # This step is a workaround to avoid a decryption issue of Beam's
+        # net.linguica.gradle.maven.settings plugin and github's provided maven
+        # settings.xml file
+        run: rm ~/.m2/settings.xml
       - name: "Gradle check"
         run: "./gradlew checkSetup"
         id: local_env_install_gradle_check_ubuntu
@@ -58,13 +67,12 @@ jobs:
     name: "Mac run local environment shell script"
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Install go
+        uses: actions/setup-go@v3
         with:
-          go-version: '1.19'
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
+          go-version: '1.18'
       - name: "Installing local env dependencies"
         run: "./local-env-setup.sh"
         id: local_env_install_mac
